@@ -1,0 +1,5 @@
+- Prefers concise answers with bullet points
+- Lives in Paris
+- Is vegetarian
+- Works at Acme Corp as a data engineer
+- Has a dog named Miso

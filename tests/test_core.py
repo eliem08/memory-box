@@ -35,7 +35,7 @@ class Tests(unittest.TestCase):
         box = MemoryBox()
         box.import_text(CHATGPT, "chatgpt")
         box.import_text(CLAUDE, "claude")
-        (attr, facts), = box.conflicts()
+        ((attr, facts),) = box.conflicts()
         self.assertEqual(attr, "home_location")
         self.assertEqual(len(facts), 2)
 

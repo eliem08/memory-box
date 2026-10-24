@@ -1,4 +1,5 @@
 """Portable memory format: import, merge, conflict detection and export."""
+
 from __future__ import annotations
 
 import hashlib
@@ -7,7 +8,7 @@ import json
 import os
 import re
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
 __all__ = ["Fact", "MemoryBox", "parse_text", "categorize"]
@@ -148,9 +149,18 @@ class MemoryBox:
         return [(attr, [fs[0] for fs in vals.values()]) for attr, vals in values.items() if len(vals) > 1]
 
     # export --------------------------------------------------------------
-    def export(self, fmt: str = "markdown", budget_tokens: int | None = None, categories: list[str] | None = None,
-               include_sensitive: bool = True) -> str:
-        facts = [f for f in self.facts if (not categories or f.category in categories) and (include_sensitive or not f.sensitive)]
+    def export(
+        self,
+        fmt: str = "markdown",
+        budget_tokens: int | None = None,
+        categories: list[str] | None = None,
+        include_sensitive: bool = True,
+    ) -> str:
+        facts = [
+            f
+            for f in self.facts
+            if (not categories or f.category in categories) and (include_sensitive or not f.sensitive)
+        ]
         facts.sort(key=lambda f: (-f.confidence, f.created), reverse=False)
         if fmt == "json":
             return json.dumps([asdict(f) for f in facts], indent=2)
