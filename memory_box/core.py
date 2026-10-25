@@ -61,6 +61,8 @@ def parse_text(raw: str) -> list[str]:
         try:
             data = json.loads(raw)
             items = data if isinstance(data, list) else data.get("memories", data.get("facts", []))
+            if not isinstance(items, list) or not all(isinstance(i, (str, dict)) for i in items):
+                raise ValueError("memory export must be a list of strings or {text|content} objects")
             return [i if isinstance(i, str) else i.get("text") or i.get("content", "") for i in items]
         except json.JSONDecodeError:
             pass
@@ -104,6 +106,8 @@ class MemoryBox:
             return cls()
         with open(path, encoding="utf-8-sig") as fh:
             doc = json.load(fh)
+        if not isinstance(doc, dict) or not isinstance(doc.get("facts"), list):
+            raise ValueError(f"{path}: not a memory-box file (expected an object with a facts list)")
         body = json.dumps(doc["facts"], sort_keys=True).encode()
         if key and not hmac.compare_digest(doc.get("signature", ""), hmac.new(key, body, hashlib.sha256).hexdigest()):
             raise ValueError("signature mismatch - memory file was modified")
