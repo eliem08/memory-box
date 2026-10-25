@@ -102,7 +102,7 @@ class MemoryBox:
     def load(cls, path, key: bytes | None = None):
         if not os.path.exists(path):
             return cls()
-        with open(path, encoding="utf-8") as fh:
+        with open(path, encoding="utf-8-sig") as fh:
             doc = json.load(fh)
         body = json.dumps(doc["facts"], sort_keys=True).encode()
         if key and not hmac.compare_digest(doc.get("signature", ""), hmac.new(key, body, hashlib.sha256).hexdigest()):

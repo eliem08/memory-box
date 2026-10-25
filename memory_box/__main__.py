@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import sys
 
@@ -10,7 +11,7 @@ def _key():
     return k.encode() if k else None
 
 
-def main(argv=None):
+def _run(argv=None):
     ap = argparse.ArgumentParser(prog="memory-box")
     sub = ap.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("import")
@@ -29,7 +30,7 @@ def main(argv=None):
 
     if a.cmd == "import":
         box = MemoryBox.load(a.out, _key())
-        with open(a.file, encoding="utf-8") as fh:
+        with open(a.file, encoding="utf-8-sig") as fh:
             added = box.import_text(fh.read(), a.source)
         box.save(a.out, _key())
         print(f"imported from {a.source}: {added} new facts, {len(box.facts)} total -> {a.out}")
@@ -46,6 +47,23 @@ def main(argv=None):
         return 0
     print(box.export(a.format, a.budget, a.categories, not a.no_sensitive))
     return 0
+
+
+def main(argv=None):
+    """Run the CLI; a bad input file or argument exits 2 with a one-line error instead of a traceback.
+
+    Set AGENT_ECONOMY_DEBUG=1 to see the full traceback.
+    """
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
+    try:
+        return _run(argv)
+    except (OSError, ValueError, KeyError, csv.Error) as e:
+        if os.environ.get("AGENT_ECONOMY_DEBUG"):
+            raise
+        msg = e.args[0] if isinstance(e, KeyError) and e.args else e
+        print(f"error: {msg}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
