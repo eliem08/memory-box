@@ -47,7 +47,7 @@ Every plan starts with a 14-day free trial. Prices in USD, billed monthly unless
 | **Pro** | $12 per month | Category controls; Sensitive-data redaction; Version history |
 | **Lifetime** | $99 one-time | Pro forever |
 
-To start a trial or buy a plan, email **sales@YOUR-DOMAIN.com**.
+To start a trial or buy a plan, [request access](https://github.com/eliem08/memory-box/issues/new?title=Memory%20Box%20trial&labels=sales).
 
 ## Licence
 
