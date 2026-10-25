@@ -11,7 +11,21 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
-__all__ = ["Fact", "MemoryBox", "parse_text", "categorize"]
+__all__ = ["Fact", "MemoryBox", "parse_text", "categorize", "looks_like_instruction"]
+
+# A memory is a fact about the user, never an order to the next agent. Anything shaped like a prompt injection
+# is kept in the file (so the user can see and delete it) but never exported into another agent's context.
+INJECTION_RE = re.compile(
+    r"\b(ignore|disregard|forget|override)\b.{0,40}\b(instructions?|prompts?|rules|guidelines|system)\b"
+    r"|\bsystem prompt\b|\byou are now\b|\bnew instructions\b|\bact as\b.{0,30}\b(admin|developer|root)\b"
+    r"|\b(reveal|print|send|exfiltrate)\b.{0,40}\b(password|api key|secret|token|credentials?)\b",
+    re.I | re.S,
+)
+
+
+def looks_like_instruction(text: str) -> bool:
+    return bool(INJECTION_RE.search(text))
+
 
 CATEGORY_HINTS = {
     "health": ["allergic", "allergy", "diet", "vegetarian", "vegan", "medication", "condition", "diagnosed", "gluten"],
@@ -111,6 +125,10 @@ class MemoryBox:
         body = json.dumps(doc["facts"], sort_keys=True).encode()
         if key and not hmac.compare_digest(doc.get("signature", ""), hmac.new(key, body, hashlib.sha256).hexdigest()):
             raise ValueError("signature mismatch - memory file was modified")
+        fields = set(Fact.__dataclass_fields__)
+        for f in doc["facts"]:
+            if not isinstance(f, dict) or not {"text", "category", "sources", "created"} <= set(f) <= fields:
+                raise ValueError(f"{path}: malformed fact {f!r:.80}")
         return cls([Fact(**f) for f in doc["facts"]])
 
     def save(self, path, key: bytes | None = None):
@@ -119,8 +137,10 @@ class MemoryBox:
         doc = {"format": self.VERSION, "facts": facts}
         if key:
             doc["signature"] = hmac.new(key, body, hashlib.sha256).hexdigest()
-        with open(path, "w", encoding="utf-8") as fh:
+        tmp = f"{path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:  # write-then-rename: a crash never leaves half a file
             json.dump(doc, fh, indent=2)
+        os.replace(tmp, path)
 
     # merge ---------------------------------------------------------------
     def add(self, text: str, source: str, created: str | None = None) -> Fact:
@@ -163,7 +183,9 @@ class MemoryBox:
         facts = [
             f
             for f in self.facts
-            if (not categories or f.category in categories) and (include_sensitive or not f.sensitive)
+            if (not categories or f.category in categories)
+            and (include_sensitive or not f.sensitive)
+            and (fmt == "json" or not looks_like_instruction(f.text))
         ]
         facts.sort(key=lambda f: (-f.confidence, f.created), reverse=False)
         if fmt == "json":
