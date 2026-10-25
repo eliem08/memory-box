@@ -1,15 +1,45 @@
-# memory-box
+<!-- sell-kit:start -->
+# Memory Box
 
 [![CI](https://github.com/eliem08/memory-box/actions/workflows/ci.yml/badge.svg)](https://github.com/eliem08/memory-box/actions/workflows/ci.yml)
 
-> **Dropbox for your AI memory** — take what your agent knows about you to any agent.
+> **Take what your AI knows about you to any other AI.**
 
-ChatGPT knows you're vegetarian. Claude knows your codebase conventions.
-Your new agent knows nothing. `memory-box` defines a portable memory format,
-imports from each assistant's export, merges and de-duplicates, flags
-conflicts, and exports a compact context block any agent can load.
+**Who it's for:** Heavy AI users switching between assistants.
 
-## What the MVP does
+**The problem:** Every assistant keeps its own memory of you, so switching tools means starting from zero or pasting in junk.
+
+**What you get:** Import memory exports, merge and dedupe them, spot conflicts, and export a signed, budgeted memory file with injected instructions filtered out.
+
+## Quickstart
+
+Customers receive a release archive with the wheel and the examples. Python 3.10+ and no other dependencies.
+
+```bash
+pip install memory_box-0.1.0-py3-none-any.whl
+memory-box import examples/chatgpt-memory.txt --source chatgpt -o box.json
+memory-box import examples/claude-memory.md --source claude -o box.json
+memory-box conflicts box.json
+```
+
+## Pricing
+
+Every plan starts with a 14-day free trial. Prices in USD, billed monthly unless noted.
+
+| Plan | Price | Includes |
+|---|---|---|
+| **Personal** | $5 per month | Unlimited imports; Merge and conflict check; Signed export |
+| **Pro** | $12 per month | Category controls; Sensitive-data redaction; Version history |
+| **Lifetime** | $99 one-time | Pro forever |
+
+To start a trial or buy a plan, email **sales@YOUR-DOMAIN.com**.
+
+## Licence
+
+Proprietary. Copyright (c) 2026 eliem08. All rights reserved. Use requires a paid plan or an active trial; see [LICENSE](LICENSE).
+<!-- sell-kit:end -->
+
+## What it does
 
 - **Portable Memory Format (PMF)**: JSON with typed facts
   `{id, text, category, source, created, confidence, sensitive}` and an HMAC signature

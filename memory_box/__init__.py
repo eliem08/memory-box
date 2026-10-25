@@ -1,4 +1,4 @@
-"""Dropbox for your AI memory: take what your agent knows about you to any agent."""
+"""Memory Box: Take what your AI knows about you to any other AI."""
 
 from .core import *
 

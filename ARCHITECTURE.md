@@ -41,7 +41,7 @@ signature computed as HMAC-SHA256 over the canonical JSON of the facts.
 
 ## 6. Production architecture
 A local-first app (SQLite + PMF export), an MCP server exposing `memory.search/add/forget` with
-per-agent category scopes (via agent-okta), and sync through an E2E-encrypted blob relay
+per-agent category scopes (via agentwarden), and sync through an E2E-encrypted blob relay
 (libsodium sealed boxes; the server holds ciphertext only).
 
 ## 7. Risks
