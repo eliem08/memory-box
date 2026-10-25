@@ -1,0 +1,33 @@
+[
+ {
+  "op": "import",
+  "payload": {
+   "file": {
+    "name": "chatgpt-memory.txt",
+    "content": "- Prefers concise answers with bullet points\n- Lives in Paris\n- Is vegetarian\n- Works at Acme Corp as a data engineer\n- Has a dog named Miso\n"
+   },
+   "source": "chatgpt"
+  }
+ },
+ {
+  "op": "import",
+  "payload": {
+   "file": {
+    "name": "claude-memory.md",
+    "content": "# Memory\n\n* User prefers concise answers in bullet points\n* Lives in Lyon\n* Working on a project called Umbra, a shadow-API scanner\n* Prefers Python and stdlib-only tooling\n"
+   },
+   "source": "claude"
+  }
+ },
+ {
+  "op": "conflicts",
+  "payload": {}
+ },
+ {
+  "op": "export",
+  "payload": {
+   "format": "prompt",
+   "no_sensitive": true
+  }
+ }
+]

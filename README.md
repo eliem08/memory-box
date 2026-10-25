@@ -22,6 +22,18 @@ memory-box import examples/claude-memory.md --source claude -o box.json
 memory-box conflicts box.json
 ```
 
+## Web app and API
+
+Every command is also a JSON API endpoint and a browser form, served by the built-in web app.
+
+```bash
+memory-box-web --port 8000          # then open http://127.0.0.1:8000
+docker build -t memory-box . && docker run -p 8000:8000 -v memory-box-data:/data memory-box
+```
+
+Endpoints: `POST /api/import`, `POST /api/conflicts`, `POST /api/export`, plus `GET /healthz` and `GET /api/spec` (machine-readable field list).
+Files are sent as `{"name": ..., "content": ...}`, folders as `{"files": [...]}` or a base64 zip.
+
 ## Pricing
 
 Every plan starts with a 14-day free trial. Prices in USD, billed monthly unless noted.

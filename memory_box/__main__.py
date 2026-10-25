@@ -11,7 +11,7 @@ def _key():
     return k.encode() if k else None
 
 
-def _run(argv=None):
+def build_parser():
     ap = argparse.ArgumentParser(prog="memory-box")
     sub = ap.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("import")
@@ -26,6 +26,11 @@ def _run(argv=None):
     e.add_argument("--budget", type=int)
     e.add_argument("--categories", nargs="*")
     e.add_argument("--no-sensitive", action="store_true")
+    return ap
+
+
+def _run(argv=None):
+    ap = build_parser()
     a = ap.parse_args(argv)
 
     if a.cmd == "import":

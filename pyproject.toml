@@ -23,6 +23,7 @@ dev = ["ruff>=0.6"]
 
 [project.scripts]
 memory-box = "memory_box.__main__:main"
+memory-box-web = "memory_box.web:main"
 
 [project.urls]
 Repository = "https://github.com/eliem08/memory-box"
