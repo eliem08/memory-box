@@ -29,5 +29,11 @@
    "format": "prompt",
    "no_sensitive": true
   }
+ },
+ {
+  "op": "export",
+  "payload": {
+   "format": "chatgpt"
+  }
  }
 ]

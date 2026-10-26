@@ -87,7 +87,7 @@ SPEC = {
                     "flag": "--format",
                     "kind": "text",
                     "required": False,
-                    "choices": ["markdown", "prompt", "json"],
+                    "choices": ["markdown", "prompt", "json", "chatgpt", "claude", "gemini", "mem0"],
                     "default": "markdown",
                     "help": None,
                     "scope": "op",

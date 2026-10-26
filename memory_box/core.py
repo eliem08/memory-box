@@ -69,24 +69,52 @@ class Fact:
         return self.category in SENSITIVE
 
 
+TEXT_KEYS = ("text", "content", "memory", "value", "fact")  # ours/OpenAI, Mem0, Letta blocks, generic
+LIST_KEYS = ("memories", "facts", "results", "blocks", "items")
+
+
+def _item_text(item) -> str:
+    if isinstance(item, str):
+        return item
+    return next((str(item[k]) for k in TEXT_KEYS if item.get(k)), "")
+
+
+def _parse_csv(raw: str) -> list[str] | None:
+    """A spreadsheet export with a memory/text/fact column; None when the text is not such a CSV."""
+    import csv
+    import io
+
+    first = raw.lstrip("﻿").split("\n", 1)[0].lower()
+    if "," not in first or not any(k in [c.strip() for c in first.split(",")] for k in TEXT_KEYS):
+        return None
+    rows = csv.DictReader(io.StringIO(raw.lstrip("﻿")))
+    col = next(c for c in rows.fieldnames or [] if c.strip().lower() in TEXT_KEYS)
+    return [r[col].strip() for r in rows if (r.get(col) or "").strip()]
+
+
 def parse_text(raw: str) -> list[str]:
-    """Extract one fact per bullet / line from plain-text or markdown memory dumps."""
+    """Extract one fact per item from JSON (ours, Mem0, Letta), JSONL, CSV, or plain-text/markdown dumps."""
     if raw.lstrip().startswith(("[", "{")):
         try:
             data = json.loads(raw)
-            items = data if isinstance(data, list) else data.get("memories", data.get("facts", []))
+            if isinstance(data, list):
+                items = data
+            else:
+                items = next((data[k] for k in LIST_KEYS if isinstance(data.get(k), list)), [])
             if not isinstance(items, list) or not all(isinstance(i, (str, dict)) for i in items):
-                raise ValueError("memory export must be a list of strings or {text|content} objects")
-            return [i if isinstance(i, str) else i.get("text") or i.get("content", "") for i in items]
+                raise ValueError("memory export must be a list of strings or {text|content|memory} objects")
+            return [t for t in (_item_text(i) for i in items) if t]
         except json.JSONDecodeError:
             pass
+    from_csv = _parse_csv(raw)
+    if from_csv is not None:
+        return from_csv
     facts = []
     for line in raw.splitlines():
         line = line.strip()
         if line.startswith("{"):
             try:
-                o = json.loads(line)
-                facts.append(o.get("text") or o.get("content", ""))
+                facts.append(_item_text(json.loads(line)))
                 continue
             except json.JSONDecodeError:
                 pass
@@ -95,6 +123,17 @@ def parse_text(raw: str) -> list[str]:
             continue
         facts.append(line)
     return [f for f in facts if f]
+
+
+# Where each assistant keeps what it knows about you, and how much it holds
+TARGETS = {
+    # ChatGPT > Settings > Personalization > Custom instructions: "What would you like ChatGPT to know about you?"
+    "chatgpt": {"chars": 1500, "header": "", "line": "- {text}."},
+    # Claude project instructions or a CLAUDE.md "About me" section
+    "claude": {"chars": None, "header": "## About me", "line": "- {text} ({category})"},
+    # Gemini > Saved info: one entry per line, each pasted separately
+    "gemini": {"chars": None, "header": "", "line": "{text}."},
+}
 
 
 def _norm_tokens(text):
@@ -190,6 +229,16 @@ class MemoryBox:
         facts.sort(key=lambda f: (-f.confidence, f.created), reverse=False)
         if fmt == "json":
             return json.dumps([asdict(f) for f in facts], indent=2)
+        if fmt == "mem0" or fmt in TARGETS:
+            # an assistant cannot hold "lives in Paris" and "lives in Lyon" at once: the newest fact wins
+            stale = {id(f) for _, group in self.conflicts() for f in sorted(group, key=lambda f: f.created)[:-1]}
+            facts = [f for f in facts if id(f) not in stale]
+        if fmt == "mem0":  # ready for Mem0's add/import: one memory per item, category kept as metadata
+            return json.dumps(
+                {"memories": [{"memory": f.text, "metadata": {"category": f.category}} for f in facts]}, indent=2
+            )
+        if fmt in TARGETS:
+            return self._for_assistant(fmt, facts, budget_tokens)
         lines, used = [], 0
         header = "Things you know about the user (portable memory):" if fmt == "prompt" else "# Memory"
         used += len(header) // 4
@@ -207,3 +256,18 @@ class MemoryBox:
             for t in items:
                 lines.append(f"- {t}" if fmt == "markdown" else f"- [{cat}] {t}")
         return "\n".join(lines)
+
+    @staticmethod
+    def _for_assistant(fmt: str, facts: list[Fact], budget_tokens: int | None) -> str:
+        """Text shaped for one assistant's memory box, cut to its real size limit, best facts first."""
+        spec = TARGETS[fmt]
+        limit = min(spec["chars"] or 10**9, budget_tokens * 4 if budget_tokens else 10**9)
+        out = [spec["header"]] if spec["header"] else []
+        used = sum(len(x) + 1 for x in out)
+        for f in facts:
+            line = spec["line"].format(text=f.text.rstrip("."), category=f.category)
+            if used + len(line) + 1 > limit:
+                continue
+            out.append(line)
+            used += len(line) + 1
+        return "\n".join(out)

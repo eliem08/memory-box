@@ -22,7 +22,9 @@ def build_parser():
     c.add_argument("box")
     e = sub.add_parser("export")
     e.add_argument("box")
-    e.add_argument("--format", choices=["markdown", "prompt", "json"], default="markdown")
+    e.add_argument(
+        "--format", choices=["markdown", "prompt", "json", "chatgpt", "claude", "gemini", "mem0"], default="markdown"
+    )
     e.add_argument("--budget", type=int)
     e.add_argument("--categories", nargs="*")
     e.add_argument("--no-sensitive", action="store_true")
