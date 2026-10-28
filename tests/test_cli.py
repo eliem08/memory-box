@@ -22,6 +22,21 @@ COMMANDS = [
 ]
 
 
+class CliExitCodeTests(unittest.TestCase):
+    def test_no_conflicts_exits_1(self):
+        """A clean box is the 'nothing found' domain answer, not a silent success."""
+        with tempfile.TemporaryDirectory() as tmp:
+            box = f"{tmp}/box.json"
+            argv = ["import", f"{ROOT}/examples/chatgpt-memory.txt", "--source", "chatgpt", "-o", box]
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main(argv), 0)
+                out = io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    code = main(["conflicts", box])
+            self.assertEqual(code, 1)
+            self.assertIn("no conflicts", out.getvalue())
+
+
 class CliSmokeTests(unittest.TestCase):
     def test_commands(self):
         with tempfile.TemporaryDirectory() as tmp:
