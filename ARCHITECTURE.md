@@ -18,6 +18,7 @@ flowchart LR
   Box -->|scoped MCP: memory.search| Agents[Any agent]
   Box -->|E2E encrypted| Sync[Sync relay]
 ```
+MCP and Sync are roadmap items (see README Roadmap), not in this release; the shipped path is Import → Box → Conflicts → Export.
 
 ## 3. Data model
 `Fact{id, text, category, sources[], created, confidence}`. `sensitive` is derived from the category
@@ -39,8 +40,9 @@ signature computed as HMAC-SHA256 over the canonical JSON of the facts.
 - **Redaction happens at export,** not import, so the box stays complete and each agent gets the
   minimum it needs.
 
-## 6. Production architecture
-A local-first app (SQLite + PMF export), an MCP server exposing `memory.search/add/forget` with
+## 6. Future production architecture (not shipped)
+The current release is the CLI + web app above. The planned path is a local-first app
+(SQLite + PMF export), an MCP server exposing `memory.search/add/forget` with
 per-agent category scopes (via agentwarden), and sync through an E2E-encrypted blob relay
 (libsodium sealed boxes; the server holds ciphertext only).
 

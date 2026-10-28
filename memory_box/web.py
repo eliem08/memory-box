@@ -362,17 +362,21 @@ class Billing:
         price = self.prices.get(plan)
         if not price:
             raise BadRequest(f"unknown plan {plan!r}; choose one of {sorted(self.prices)}")
-        session = self._stripe(
-            "checkout/sessions",
-            {
-                "mode": "subscription",
-                "line_items[0][price]": price,
-                "line_items[0][quantity]": "1",
-                "metadata[plan]": plan,
-                "success_url": f"{self.public_url}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
-                "cancel_url": f"{self.public_url}/pricing",
-            },
-        )
+        # Monthly plans start with the advertised 14-day free trial. Lifetime is a
+        # one-time price, so it checks out as a payment, not a subscription.
+        form = {
+            "line_items[0][price]": price,
+            "line_items[0][quantity]": "1",
+            "metadata[plan]": plan,
+            "success_url": f"{self.public_url}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{self.public_url}/pricing",
+        }
+        if plan == "lifetime":
+            form["mode"] = "payment"
+        else:
+            form["mode"] = "subscription"
+            form["subscription_data[trial_period_days]"] = "14"
+        session = self._stripe("checkout/sessions", form)
         return session["url"]
 
     def verify(self, body: bytes, header: str, now: float | None = None) -> dict:
@@ -567,7 +571,8 @@ def pricing_page(billing: Billing) -> str:
     return _shell(
         "Pricing",
         f"<h1>{e(SPEC['name'])} plans</h1><p>{e(SPEC['tagline'])}</p>{cards}"
-        "<p><small>Payments by Stripe. Your API key appears right after checkout.</small></p>",
+        "<p><small>Monthly plans start with a 14-day free trial. Payments by Stripe. "
+        "Your API key appears right after checkout.</small></p>",
     )
 
 

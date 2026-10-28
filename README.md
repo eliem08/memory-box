@@ -48,10 +48,10 @@ To sell self-serve, set four variables and point a Stripe webhook at `https://<y
 |---|---|
 | `STRIPE_SECRET_KEY` | `sk_live_...` |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` |
-| `STRIPE_PRICES` | `team=price_123,business=price_456` |
+| `STRIPE_PRICES` | `personal=<personal-price-id>,pro=<pro-price-id>,lifetime=<lifetime-price-id>` |
 | `PUBLIC_URL` | `https://memory-box.example.com` |
 
-Buyers pick a plan on `/pricing`, pay on Stripe Checkout and see their API key once on the success page. Cancelling the subscription revokes the key. A selling server always requires a key.
+Buyers pick a plan on `/pricing`, pay on Stripe Checkout and see their API key once on the success page. Monthly plans start with a 14-day free trial; Lifetime is a one-time payment. Cancelling the subscription revokes the key. A selling server always requires a key. Copy `.env.example` to `.env` for the variable names; never commit real values.
 
 ## Pricing
 
@@ -60,8 +60,10 @@ Every plan starts with a 14-day free trial. Prices in USD, billed monthly unless
 | Plan | Price | Includes |
 |---|---|---|
 | **Personal** | $5 per month | Unlimited imports; Merge and conflict check; Signed export |
-| **Pro** | $12 per month | Category controls; Sensitive-data redaction; Version history |
+| **Pro** | $12 per month | Everything in Personal; Commercial use; Priority support |
 | **Lifetime** | $99 one-time | Pro forever |
+
+All plans unlock the same software; higher tiers add licence scope and support, not gated features. Category controls (`--categories`) and sensitive-data redaction (`--no-sensitive`) are part of the software on every plan.
 
 To start a trial or buy a plan, [request access](https://github.com/eliem08/memory-box/issues/new?title=Memory%20Box%20trial&labels=sales).
 
@@ -73,7 +75,9 @@ Proprietary. Copyright (c) 2026 eliem08. All rights reserved. Use requires a pai
 ## What it does
 
 - **Portable Memory Format (PMF)**: JSON with typed facts
-  `{id, text, category, source, created, confidence, sensitive}` and an HMAC signature
+  `{id, text, category, sources, created, confidence}` and an HMAC signature
+  when `MEMORY_BOX_KEY` is set (without it the file is unsigned; `sensitive`
+  is derived from the category, not stored)
 - **Importers**: plain-text memory lists (one fact per line / bullet — what ChatGPT
   "Manage memory" and Claude memory exports look like), Markdown, JSONL
 - **Auto-categorise**: identity, preferences, work, projects, people, health, location, style
@@ -95,6 +99,7 @@ memory-box export box.json --format prompt --budget 400 --no-sensitive
 
 ## Roadmap
 
+- Version history (box snapshots)
 - Encrypted sync (end-to-end; keys stay on device)
 - MCP server so any agent can `memory.search` / `memory.add` with per-agent scopes
 - Push-back: write merged memory into each assistant via their APIs where possible
