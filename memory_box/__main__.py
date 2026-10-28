@@ -51,6 +51,7 @@ def _run(argv=None):
                 print(f"  - {f.text}  ({', '.join(f.sources)}, {f.created})")
         if not found:
             print("no conflicts")
+            return 1  # nothing found: the domain answer for a clean box
         return 0
     print(box.export(a.format, a.budget, a.categories, not a.no_sensitive))
     return 0
