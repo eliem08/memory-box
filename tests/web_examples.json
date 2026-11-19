@@ -35,5 +35,13 @@
   "payload": {
    "format": "chatgpt"
   }
+ },
+ {
+  "op": "sync",
+  "payload": {
+   "user_id": "alice",
+   "direction": "push",
+   "dry_run": true
+  }
  }
 ]

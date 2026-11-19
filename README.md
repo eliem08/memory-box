@@ -80,12 +80,22 @@ Proprietary. Copyright (c) 2026 eliem08. All rights reserved. Use requires a pai
   is derived from the category, not stored)
 - **Importers**: plain-text memory lists (one fact per line / bullet — what ChatGPT
   "Manage memory" and Claude memory exports look like), Markdown, JSONL
-- **Auto-categorise**: identity, preferences, work, projects, people, health, location, style
+- **Auto-categorise**: identity, preferences, work, projects, people, health, beliefs, location, style.
+  Health (conditions, medicines, therapy, pregnancy) and beliefs (religion, politics, sexuality) count as
+  sensitive, together with people and location.
 - **Merge** across sources with near-duplicate detection (token Jaccard) —
   keeps the most recent, records all sources
 - **Conflict detection** for single-valued attributes ("lives in Paris" vs "lives in Lyon")
 - **Export** as Markdown, JSON, or a **system-prompt block** with a token
   budget, category filter and sensitive-fact redaction
+- **Two-way sync with Mem0** (`sync`, with `MEM0_API_KEY` set):
+  - pulls every memory Mem0 holds for a user into the box;
+  - pushes the box's facts back, stored word for word (`infer: false`, so Mem0's model does not rewrite
+    them), skipping facts Mem0 already has and keeping only the newest of conflicting facts;
+  - keeps sensitive facts out of the push unless you pass `--include-sensitive`;
+  - `--dry-run` shows what would be pushed, without any network call.
+  It is written against Mem0's hosted v3 API reference and tested against a stand-in, not yet against a
+  live Mem0 account.
 
 ## Quickstart
 
@@ -95,6 +105,8 @@ memory-box import chatgpt-memory.txt --source chatgpt -o box.json
 memory-box import claude-memory.md --source claude -o box.json
 memory-box conflicts box.json
 memory-box export box.json --format prompt --budget 400 --no-sensitive
+MEM0_API_KEY=m0-... memory-box sync box.json --user-id alice          # pull, then push
+memory-box sync box.json --user-id alice --direction push --dry-run   # preview, no network
 ```
 
 ## Roadmap
@@ -102,7 +114,7 @@ memory-box export box.json --format prompt --budget 400 --no-sensitive
 - Version history (box snapshots)
 - Encrypted sync (end-to-end; keys stay on device)
 - MCP server so any agent can `memory.search` / `memory.add` with per-agent scopes
-- Push-back: write merged memory into each assistant via their APIs where possible
+- Push-back to assistants that expose a memory API (ChatGPT and Claude memory have none today; Letta does)
 
 ## Development
 

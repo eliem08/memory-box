@@ -4,6 +4,7 @@ import os
 import sys
 
 from .core import MemoryBox
+from .mem0 import Mem0, plan_push, pull, push
 
 
 def _key():
@@ -28,6 +29,12 @@ def build_parser():
     e.add_argument("--budget", type=int)
     e.add_argument("--categories", nargs="*")
     e.add_argument("--no-sensitive", action="store_true")
+    s = sub.add_parser("sync", help="pull from and push to Mem0 for one user (MEM0_API_KEY)")
+    s.add_argument("box")
+    s.add_argument("--user-id", required=True, help="the Mem0 user the memories belong to")
+    s.add_argument("--direction", choices=["pull", "push", "both"], default="both")
+    s.add_argument("--include-sensitive", action="store_true", help="also push health, location and people facts")
+    s.add_argument("--dry-run", action="store_true", help="show what a push would send; no network")
     return ap
 
 
@@ -43,6 +50,25 @@ def _run(argv=None):
         print(f"imported from {a.source}: {added} new facts, {len(box.facts)} total -> {a.out}")
         return 0
     box = MemoryBox.load(a.box, _key())
+    if a.cmd == "sync":
+        if a.dry_run:
+            todo = plan_push(box, [], a.include_sensitive)
+            for f in todo:
+                print(f"would push [{f.category}] {f.text}")
+            held = sum(1 for f in box.facts if f.sensitive) if not a.include_sensitive else 0
+            print(
+                f"{len(todo)} fact(s) would go to Mem0 for {a.user_id} (before skipping ones it already has); "
+                f"{held} sensitive kept back"
+            )
+            return 0
+        client = Mem0()
+        if a.direction in ("pull", "both"):
+            n = pull(box, a.user_id, client)
+            box.save(a.box, _key())
+            print(f"pulled from Mem0: {n} new fact(s); {len(box.facts)} in the box")
+        if a.direction in ("push", "both"):
+            print(f"pushed to Mem0: {push(box, a.user_id, client, a.include_sensitive)} fact(s) for {a.user_id}")
+        return 0
     if a.cmd == "conflicts":
         found = box.conflicts()
         for attr, facts in found:
